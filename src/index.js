@@ -1,8 +1,9 @@
-import { intro, outro, text, select, confirm, multiselect } from '@clack/prompts';
+import { intro, outro, text, select, confirm, multiselect, isCancel } from '@clack/prompts';
 import { COMMIT_TYPES } from './commit-types.js';
 import colors from 'picocolors';
 import { getChangedFiles, getStagedFiles, gitAdd, gitCommit } from './git.js';
 import { trytm } from '@bdsqqq/try';
+import { exitProgram } from './utils.js';
 
 intro(colors.inverse(` Asistente para la creación de commits por ${colors.yellow(' @clack ')}`));
 
@@ -14,16 +15,15 @@ if (errorChangedFiles ?? errorStagedFiles) {
   process.exit(1);
 }
 
-// console.log({ changedFiles, stagedFiles });
-
 if (stagedFiles.length === 0 && changedFiles.length > 0) {
-  // outro(colors.red('Error: No hay archivos preparados para hacer commit'));
-  // process.exit(1);
   const files = await multiselect({
     message: `${colors.cyan('Por favor Selecciona los archivos que quieres preparar para hacer commit')}`,
     options: changedFiles.map((file) => ({ value: file, label: file }))
   });
 
+  if (isCancel(files)) {
+    exitProgram();
+  }
   await gitAdd({ files });
 }
 
@@ -47,6 +47,10 @@ const commitMessage = await text({
   }
 });
 
+if (isCancel(commitMessage)) {
+  exitProgram();
+}
+
 const { emoji, release } = COMMIT_TYPES[commitType];
 let breakingChange = false;
 if (release) {
@@ -57,6 +61,10 @@ if (release) {
      'Si la respuesta es si, deberías crear un commit de tipo "BREAKING CHANGE" y al hacer el release se creará una nueva versión mayor'
    )}`
   });
+
+  if (isCancel(breakingChange)) {
+    exitProgram();
+  }
 }
 
 let commit = `${emoji} ${commitType}: ${commitMessage}`;
@@ -71,9 +79,8 @@ const shouldContinue = await confirm({
     ${colors.cyan('¿Confirmas?')}`
 });
 
-if (!shouldContinue) {
-  outro(colors.yellow('No se ha creado el commit'));
-  process.exit(0);
+if (isCancel(shouldContinue)) {
+  exitProgram();
 }
 
 await gitCommit({ commit });

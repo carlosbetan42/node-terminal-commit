@@ -17,13 +17,13 @@ export async function getStagedFiles() {
   return cleanStdout(stdout);
 }
 
-export async function gitCommit({ commit = {} }) {
+export async function gitCommit({ commit = {} } = {}) {
   console.log(commit);
   const { stdout } = await execAsync(`git commit -m "${commit}"`);
   return cleanStdout(stdout);
 }
 
-export async function gitAdd({ files = [] }) {
+export async function gitAdd({ files = [] } = {}) {
   const filesLine = files.join(' ');
   const { stdout } = await execAsync(`git add ${filesLine}`);
   return cleanStdout(stdout);
